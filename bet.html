@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rasbet - مسابقات ایرانی و جهانی</title>
+    <style>
+        body {
+            font-family: Tahoma, Arial, sans-serif;
+            margin: 20px;
+            direction: rtl;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #222;
+        }
+        select {
+            display: block;
+            margin: 20px auto;
+            padding: 10px;
+            font-size: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        th {
+            background-color: #4CAF50;
+            color: #fff;
+        }
+        .loading {
+            font-size: 16px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>Rasbet - مسابقات ایرانی و جهانی</h1>
+    <label for="sports">انتخاب ورزش:</label>
+    <select id="sports">
+        <option value="soccer">فوتبال</option>
+        <option value="basketball">بسکتبال</option>
+        <option value="tennis">تنیس</option>
+        <option value="cricket">کریکت</option>
+    </select>
+
+    <table>
+        <thead>
+            <tr>
+                <th>مسابقه</th>
+                <th>لیگ</th>
+                <th>زمان مسابقه</th>
+                <th>ضریب (میزبان)</th>
+                <th>ضریب (مساوی)</th>
+                <th>ضریب (میهمان)</th>
+            </tr>
+        </thead>
+        <tbody id="oddsTable">
+            <tr>
+                <td colspan="6" class="loading">در حال بارگذاری مسابقات...</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script>
+        const apiBaseUrl = 'https://api.the-odds-api.com/v4/sports'; // URL برای API
+        const apiKey = '3cc3842ac0605b6187a7848d2b27dfc9'; // کلید API خود را وارد کنید
+        const sportsDropdown = document.getElementById('sports');
+        const oddsTable = document.getElementById('oddsTable');
+
+        // جدول نگاشت تیم‌ها و لیگ‌های ایرانی به زبان فارسی
+        const translations = {
+            "soccer": "فوتبال",
+            "basketball": "بسکتبال",
+            "tennis": "تنیس",
+            "cricket": "کریکت",
+            "Persian Gulf Pro League": "لیگ برتر خلیج فارس",
+            "Esteghlal": "استقلال",
+            "Persepolis": "پرسپولیس",
+            "Sepahan": "سپاهان",
+            "Tractor": "تراکتور",
+            "Foolad": "فولاد",
+            "Naft Masjed Soleyman": "نفت مسجدسلیمان"
+        };
+
+        // ترجمه متن‌ها به فارسی
+        function translate(text) {
+            return translations[text] || text;
+        }
+
+        // دریافت مسابقات
+        async function fetchMatches(sportKey) {
+            try {
+                oddsTable.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="loading">در حال بارگذاری مسابقات...</td>
+                    </tr>
+                `;
+
+                const response = await fetch(`${apiBaseUrl}/${sportKey}/odds?regions=eu&markets=h2h&apiKey=${apiKey}`);
+                if (!response.ok) throw new Error('خطا در دریافت اطلاعات');
+                const matches = await response.json();
+
+                if (matches.length === 0) {
+                    oddsTable.innerHTML = `
+                        <tr>
+                            <td colspan="6">هیچ مسابقه‌ای برای این ورزش موجود نیست</td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                // نمایش مسابقات
+                oddsTable.innerHTML = '';
+                matches.forEach(match => {
+                    const homeTeam = translate(match.home_team);
+                    const awayTeam = translate(match.away_team);
+                    const league = translate(match.sport_title);
+                    const matchTime = new Date(match.commence_time).toLocaleString('fa-IR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: 'numeric'
+                    });
+
+                    const homeOdds = match.bookmakers[0]?.markets[0]?.outcomes[0]?.price || '-';
+                    const drawOdds = match.bookmakers[0]?.markets[0]?.outcomes[1]?.price || '-';
+                    const awayOdds = match.bookmakers[0]?.markets[0]?.outcomes[2]?.price || '-';
+
+                    oddsTable.innerHTML += `
+                        <tr>
+                            <td>${homeTeam} vs ${awayTeam}</td>
+                            <td>${league}</td>
+                            <td>${matchTime}</td>
+                            <td>${homeOdds}</td>
+                            <td>${drawOdds}</td>
+                            <td>${awayOdds}</td>
+                        </tr>
+                    `;
+                });
+            } catch (error) {
+                console.error('خطا در دریافت مسابقات:', error);
+                oddsTable.innerHTML = `
+                    <tr>
+                        <td colspan="6">خطا در بارگذاری مسابقات</td>
+                    </tr>
+                `;
+            }
+        }
+
+        // بارگذاری مسابقات هنگام تغییر ورزش
+        sportsDropdown.addEventListener('change', (e) => {
+            fetchMatches(e.target.value);
+        });
+
+        // بارگذاری پیش‌فرض (فوتبال) هنگام بارگذاری صفحه
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchMatches(sportsDropdown.value);
+        });
+    </script>
+</body>
+</html>
