@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ثبت شرط</title>
+    <script>
+        // بازیابی شرط‌ها از Local Storage
+        function loadBets() {
+            const storedBets = localStorage.getItem("bets");
+            return storedBets ? JSON.parse(storedBets) : [];
+        }
+
+        // ذخیره شرط‌ها در Local Storage
+        function saveBets(bets) {
+            localStorage.setItem("bets", JSON.stringify(bets));
+        }
+
+        function submitForm() {
+            // دریافت مقادیر ورودی‌ها
+            const firstName = prompt("نام خود را وارد کنید:");
+            const lastName = prompt("نام خانوادگی خود را وارد کنید:");
+            const birthDate = prompt("تاریخ تولد خود را وارد کنید (به‌صورت YYYY-MM-DD):");
+            const teamRank = prompt("ضریب تیم مورد نظر خود را وارد کنید:");
+            const betAmount = prompt("میزان شرط خود را وارد کنید:");
+
+            // بررسی اینکه آیا همه فیلدها پر شده‌اند
+            if (!firstName || !lastName || !birthDate || !teamRank || !betAmount) {
+                alert("یک چیز را جا انداختی، مجدد تلاش کن!");
+                return;
+            }
+
+            // ذخیره اطلاعات در یک آرایه شرط‌ها
+            const betDetails = {
+                firstName: firstName,
+                lastName: lastName,
+                birthDate: birthDate,
+                teamRank: teamRank,
+                betAmount: betAmount
+            };
+
+            const bets = loadBets();
+            bets.push(betDetails);
+            saveBets(bets);
+
+            console.log("اطلاعات شرط:", betDetails);
+            alert("شرط ثبت شد!");
+        }
+
+        function showBets() {
+            const bets = loadBets();
+            if (bets.length === 0) {
+                console.log("هیچ شرطی ثبت نشده است.");
+            } else {
+                console.log("شرط‌های ثبت‌شده:", bets);
+            }
+        }
+
+        // نمایش شرط‌ها هنگام بارگذاری صفحه
+        window.onload = showBets;
+    </script>
+</head>
+<body>
+    <h1>فرم ثبت شرط</h1>
+    <button onclick="submitForm()">ثبت اطلاعات شرط</button>
+</body>
+</html>
